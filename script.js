@@ -1,3 +1,7 @@
+import { initializeApp } from "firebase/app";
+import { getAnalytics } from "firebase/analytics";
+import { getDatabase, ref, push, set, update, remove, on } from "firebase/database";
+
 // Your Firebase configuration
 const firebaseConfig = {
   apiKey: "AIzaSyDc7bWptNXBTrPZleGwat5z537dYfKe4uY",
@@ -12,13 +16,14 @@ const firebaseConfig = {
 // Initialize Firebase
 const app = initializeApp(firebaseConfig);
 const analytics = getAnalytics(app);
+const database = getDatabase(app);
 
 document.addEventListener("DOMContentLoaded", function() {
     const taskInput = document.getElementById("taskInput");
     const taskList = document.getElementById("taskList");
 
     // Load tasks from Firebase
-    database.ref('tasks').on('value', (snapshot) => {
+    on(ref(database, 'tasks'), 'value', (snapshot) => {
         const tasks = snapshot.val();
         taskList.innerHTML = ''; // Clear the current list
         for (let id in tasks) {
@@ -29,8 +34,8 @@ document.addEventListener("DOMContentLoaded", function() {
     taskInput.addEventListener("keypress", function(event) {
         if (event.key === "Enter" && taskInput.value.trim() !== "") {
             const taskText = taskInput.value.trim();
-            const newTaskRef = database.ref('tasks').push();
-            newTaskRef.set({
+            const newTaskRef = push(ref(database, 'tasks'));
+            set(newTaskRef, {
                 text: taskText,
                 done: false
             });
@@ -47,10 +52,10 @@ document.addEventListener("DOMContentLoaded", function() {
             if (isDone) {
                 playSoundEffect();
                 setTimeout(() => {
-                    database.ref('tasks/' + taskId).remove();
+                    remove(ref(database, 'tasks/' + taskId));
                 }, 60000); // 60 seconds
             }
-            database.ref('tasks/' + taskId).update({ done: isDone });
+            update(ref(database, 'tasks/' + taskId), { done: isDone });
         }
     });
 
@@ -58,7 +63,7 @@ document.addEventListener("DOMContentLoaded", function() {
         event.preventDefault();
         if (event.target.tagName === "LI") {
             const taskId = event.target.getAttribute('data-id');
-            database.ref('tasks/' + taskId).remove();
+            remove(ref(database, 'tasks/' + taskId));
         }
     });
 
@@ -69,7 +74,7 @@ document.addEventListener("DOMContentLoaded", function() {
         if (isDone) {
             taskItem.classList.add("done");
             setTimeout(() => {
-                database.ref('tasks/' + id).remove();
+                remove(ref(database, 'tasks/' + id));
             }, 60000); // 60 seconds
         }
         taskList.appendChild(taskItem);
